@@ -1,3 +1,5 @@
+/* *
+
 #![allow(unused)]
 
 use ink_stroke_modeler_rs::{
@@ -247,3 +249,4 @@ fn create_svg(
 
     Ok(svg::save(file, &doc)?)
 }
+*/

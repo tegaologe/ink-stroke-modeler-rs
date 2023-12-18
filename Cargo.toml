@@ -9,14 +9,16 @@ build = "build.rs"
 [dependencies]
 autocxx = "0.26"
 cxx = "1"
+
 thiserror = "1"
 
 [build-dependencies]
+miette = { version = "5.10.0", features = ["fancy"] }
 autocxx-build = "0.26"
 cmake = "0.1"
-miette = {version = "5", features = ["fancy"] }
 path-slash = "0.2"
 
 [dev-dependencies]
-anyhow = "1"
-svg = "0.13"
+anyhow = "1.0.75"
+svg = "0.14.0"
+
