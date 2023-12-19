@@ -115,7 +115,10 @@ fn main() -> miette::Result<()> {
     let install_include_dir = out_dir.join("include");
     let target = env::var("TARGET").into_diagnostic()?;
     let is_ios = target.contains("apple-ios");
-    
+    let absl_include_path = PathBuf::from("/opt/homebrew/opt/abseil/include");
+
+    let _absl_cmake_install_dir;
+    let _ink_stroke_modeler_cmake_install_dir;
 
     let bindings_files = vec![
         PathBuf::from("build.rs"),
@@ -125,7 +128,7 @@ fn main() -> miette::Result<()> {
     let bindings_cpp_sources = vec![PathBuf::from("src/extras.cc")];
     if is_ios {
         let ios_platform = "OS64"; 
-    let _absl_cmake_install_dir = cmake::Config::new("abseil-cpp")
+     _absl_cmake_install_dir = cmake::Config::new("abseil-cpp")
         // this avoids having to link to `dbghelp` on windows-mingw
         .profile("Release")
         .define("CMAKE_TOOLCHAIN_FILE", "/Users/tega/Desktop/Project/ink-stroke-modeler-rs/ios.toolchain.cmake")
@@ -160,7 +163,7 @@ fn main() -> miette::Result<()> {
 
         .build();
 
-    let _ink_stroke_modeler_cmake_install_dir = cmake::Config::new("ink-stroke-modeler")
+     _ink_stroke_modeler_cmake_install_dir = cmake::Config::new("ink-stroke-modeler")
         // this avoids having to link to `dbghelp` on windows-mingw
         .profile("Release")
         .define("CMAKE_CXX_STANDARD", "20")
@@ -194,11 +197,72 @@ fn main() -> miette::Result<()> {
         
 
 
+    }  else {
+        _absl_cmake_install_dir = cmake::Config::new("abseil-cpp")
+        // this avoids having to link to `dbghelp` on windows-mingw
+        .profile("Release")
+        .define("CMAKE_CXX_STANDARD", "20")
+        // Rust needs -fPIE or -fPIC
+        .define("CMAKE_POSITION_INDEPENDENT_CODE", "ON")
+        .define("CMAKE_PREFIX_PATH", &out_dir.to_slash_lossy().to_string())
+        .define(
+            "CMAKE_INSTALL_PREFIX",
+            &out_dir.to_slash_lossy().to_string(),
+        )
+        .define(
+            "CMAKE_INSTALL_LIBDIR",
+            &install_lib_dir.to_slash_lossy().to_string(),
+        )
+        .define(
+            "CMAKE_INSTALL_INCLUDEDIR",
+            &install_include_dir.to_slash_lossy().to_string(),
+        )
+        .define("BUILD_TESTING", "OFF")
+        .define("BUILD_SHARED_LIBS", "OFF")
+        .define("ABSL_PROPAGATE_CXX_STD", "ON")
+        // this forces absl stdcpp waiter implementation (see `absl/synchronization/internal/waiter.h`).
+        // this possibly circumvents build failure with mingw. see: https://github.com/abseil/abseil-cpp/issues/1510
+        .cxxflag("-DABSL_FORCE_WAITER_MODE=4")
+        .build();
+
+        _ink_stroke_modeler_cmake_install_dir = cmake::Config::new("ink-stroke-modeler")
+        // this avoids having to link to `dbghelp` on windows-mingw
+        .profile("Release")
+        .define("CMAKE_CXX_STANDARD", "20")
+        // Rust needs -fPIE or -fPIC
+        .define("CMAKE_POSITION_INDEPENDENT_CODE", "ON")
+        // This takes priority in cmake's find_package() when searching for absl to use our compiled version
+        // instead of the system-provided package
+        .define("CMAKE_PREFIX_PATH", &out_dir.to_slash_lossy().to_string())
+        .define(
+            "CMAKE_INSTALL_PREFIX",
+            &out_dir.to_slash_lossy().to_string(),
+        )
+        .define(
+            "CMAKE_INSTALL_LIBDIR",
+            &install_lib_dir.to_slash_lossy().to_string(),
+        )
+        .define(
+            "CMAKE_INSTALL_INCLUDEDIR",
+            &install_include_dir.to_slash_lossy().to_string(),
+        )
+        .define("INK_STROKE_MODELER_FIND_DEPENDENCIES", "ON")
+        .define("INK_STROKE_MODELER_BUILD_TESTING", "OFF")
+        .define("INK_STROKE_MODELER_ENABLE_INSTALL", "ON")
+        .build();
+
+
+
     }
+
+
+
+
     let include_paths = vec![
         PathBuf::from("include"),
-       // PathBuf::from("absl-cpp"),
-        //PathBuf::from("ink-stroke-modeler"),
+        absl_include_path,
+        PathBuf::from("absl-cpp"),
+        PathBuf::from("ink-stroke-modeler"),
         install_include_dir,
     ];
 
